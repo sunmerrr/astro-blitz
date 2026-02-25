@@ -19,6 +19,7 @@
     border: 2px solid #333;
     border-radius: 8px;
     box-shadow: 0 0 40px rgba(0, 150, 255, 0.3);
+    transform-origin: center center;
   }
 </style>
 </head>
@@ -28,6 +29,18 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
+
+let canvasScale = 1;
+function resizeCanvas() {
+  const pad = 16;
+  const maxW = window.innerWidth - pad;
+  const maxH = window.innerHeight - pad;
+  const s = Math.min(maxW / W, maxH / H, 1);
+  canvasScale = s;
+  canvas.style.transform = 'scale(' + s + ')';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
 // ================================================================
 // SOUND SYSTEM
@@ -612,12 +625,15 @@ document.addEventListener('keydown', e => {
   }
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; touchActive = false; });
 
 let mouseX = W / 2;
 let mouseDown = false;
+let touchActive = false;
+let touchAnchorX = 0, touchAnchorY = 0;
+let touchPlayerStartX = 0, touchPlayerStartY = 0;
 canvas.addEventListener('mousemove', e => {
-  const r = canvas.getBoundingClientRect(); mouseX = e.clientX - r.left;
+  const r = canvas.getBoundingClientRect(); mouseX = (e.clientX - r.left) * (W / r.width);
 });
 canvas.addEventListener('mousedown', e => {
   ensureAudio(); mouseDown = true;
@@ -625,15 +641,24 @@ canvas.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', () => { mouseDown = false; });
 canvas.addEventListener('touchstart', e => {
-  e.preventDefault(); ensureAudio(); mouseDown = true;
-  const r = canvas.getBoundingClientRect(); mouseX = e.touches[0].clientX - r.left;
+  e.preventDefault(); ensureAudio(); mouseDown = true; touchActive = true;
+  const r = canvas.getBoundingClientRect();
+  touchAnchorX = (e.touches[0].clientX - r.left) * (W / r.width);
+  touchAnchorY = (e.touches[0].clientY - r.top) * (H / r.height);
+  touchPlayerStartX = player.x; touchPlayerStartY = player.y;
   if (gameState === 'start' || gameState === 'gameover' || gameState === 'victory') startGame();
 });
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
-  const r = canvas.getBoundingClientRect(); mouseX = e.touches[0].clientX - r.left;
+  const r = canvas.getBoundingClientRect();
+  const tx = (e.touches[0].clientX - r.left) * (W / r.width);
+  const ty = (e.touches[0].clientY - r.top) * (H / r.height);
+  player.x = touchPlayerStartX + (tx - touchAnchorX);
+  player.y = touchPlayerStartY + (ty - touchAnchorY);
+  player.x = Math.max(20, Math.min(W - 20, player.x));
+  player.y = Math.max(40, Math.min(H - 30, player.y));
 });
-canvas.addEventListener('touchend', e => { e.preventDefault(); mouseDown = false; });
+canvas.addEventListener('touchend', e => { e.preventDefault(); mouseDown = false; touchActive = false; });
 
 function isShootPressed() { return keys['Space'] || keys['KeyZ'] || mouseDown; }
 function isMoveLeft() { return keys['ArrowLeft'] || keys['KeyA']; }
@@ -699,6 +724,7 @@ function startGame() {
   player.elementFlash = 0; player.elementFlashName = '';
   bullets = []; enemies = []; particles = []; powerUps = []; enemyBullets = [];
   boss = null; bgDecorations = [];
+  touchActive = false;
   currentThemeKey = 'deep_space'; prevThemeKey = 'deep_space'; themeTransitionProgress = 1;
   gameState = 'phase_announce';
   stateTimer = 90;
@@ -1329,7 +1355,7 @@ function updatePlayerMovement() {
   if (isMoveRight()) player.x += player.speed;
   if (isMoveUp()) player.y -= player.speed;
   if (isMoveDown()) player.y += player.speed;
-  if (mouseDown) {
+  if (mouseDown && !touchActive) {
     const dx = mouseX - player.x;
     if (Math.abs(dx) > 3) player.x += Math.sign(dx) * Math.min(player.speed, Math.abs(dx));
   }
