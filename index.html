@@ -3223,6 +3223,47 @@ window.cheat = {
   }
 };
 console.log('%c[CHEAT] cheat.help() 를 입력하세요', 'color: #4af; font-size: 12px');
+
+// ================================================================
+// HIDDEN DEV BUTTONS (canvas top-left corner, invisible)
+// ================================================================
+(function() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:9999;';
+  document.body.appendChild(wrap);
+
+  function makeBtn(idx, onClick) {
+    const btn = document.createElement('div');
+    btn.style.cssText = 'position:absolute;width:48px;height:48px;cursor:default;-webkit-tap-highlight-color:transparent;';
+    btn.addEventListener('click', (e) => { e.stopPropagation(); ensureAudio(); onClick(); });
+    btn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+    wrap.appendChild(btn);
+    return btn;
+  }
+
+  let godOn = false;
+  const btnGod = makeBtn(0, () => {
+    godOn = !godOn;
+    player.invincible = godOn ? 999999 : 0;
+  });
+  const btnSkip = makeBtn(1, () => {
+    if (gameState === 'playing' || gameState === 'phase_announce') {
+      enemies = []; enemyBullets = []; bullets = [];
+      if (boss) boss.hp = 0;
+      advancePhase();
+    }
+  });
+
+  function positionBtns() {
+    const r = canvas.getBoundingClientRect();
+    btnGod.style.left = r.left + 'px';
+    btnGod.style.top = r.top + 'px';
+    btnSkip.style.left = (r.left + 48) + 'px';
+    btnSkip.style.top = r.top + 'px';
+  }
+  positionBtns();
+  window.addEventListener('resize', positionBtns);
+})();
 </script>
 </body>
 </html>
