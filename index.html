@@ -408,17 +408,18 @@ function generateAllPhases() {
     let speedMod, hpMod, scoreMult, waveCount, budgetBase, budgetMax, spawnDelay;
 
     if (!isHell) {
-      // Phase 1-20: moderate difficulty (slightly easier than before)
-      speedMod = 1.0 + (p - 1) * 0.06;
-      hpMod = 1.0 + (p - 1) * 0.10;
+      // Phase 1-20: gradual difficulty curve (gentler early, steeper late)
+      const progress = (p - 1) / 19; // 0 at phase 1, 1 at phase 20
+      speedMod = 1.0 + (p - 1) * (0.03 + progress * 0.04);
+      hpMod = 1.0 + (p - 1) * (0.05 + progress * 0.07);
       const block = Math.floor((p - 1) / 4);
       const posInBlock = (p - 1) % 4;
       if (posInBlock === 0 && p > 1) { speedMod *= 0.88; hpMod *= 0.88; }
       scoreMult = 1 + block;
-      waveCount = Math.min(12, 4 + Math.floor(p / 2));
-      budgetBase = 4 + p * 0.5;
+      waveCount = Math.min(12, 3 + Math.floor(p / 2));
+      budgetBase = 3 + p * 0.6;
       budgetMax = 16;
-      spawnDelay = Math.max(12, 28 - Math.floor(p * 0.7));
+      spawnDelay = Math.max(12, 35 - Math.floor(p * 0.9));
     } else {
       // Phase 21-30: HELL MODE — exponential scaling
       const hellP = p - 20; // 1-10 within hell
@@ -715,9 +716,9 @@ function spawnBulletFan(x, y, count, centerAngle, spread, speed) {
 function startGame() {
   phaseData = generateAllPhases();
   currentPhase = 1;
-  score = 0; lives = 3; combo = 0; comboTimer = 0;
+  score = 0; lives = 4; combo = 0; comboTimer = 0;
   player.x = W / 2; player.y = H - 80;
-  player.powerLevel = 1; player.invincible = 60; player.shootCooldown = 0;
+  player.powerLevel = 1; player.invincible = 120; player.shootCooldown = 0;
   player.trail = [];
   player.shields = 0; player.maxShields = 0; player.shieldFlash = 0;
   player.element = 'none'; player.drone = null;
@@ -1638,7 +1639,7 @@ function playerHit() {
     return;
   }
   lives--;
-  player.invincible = 90;
+  player.invincible = 120;
   combo = 0;
   shakeTime = 15;
   spawnExplosion(player.x, player.y, '#4af', 20);
