@@ -1521,7 +1521,7 @@ function handleEnemyKill(e, ei) {
   const pd = phaseData[currentPhase - 1];
   const pts = ENEMY_DEFS[e.type].points * (pd ? pd.scoreMult : 1);
   combo++; comboTimer = 120;
-  score += pts * Math.min(combo, 10);
+  score += pts * Math.min(combo, 50);
   spawnExplosion(e.x, e.y, ENEMY_DEFS[e.type].color, 15);
   if (e.type === 'splitter') {
     spawnEnemy('mini', e.x - 15, e.y);
@@ -1533,7 +1533,7 @@ function handleEnemyKill(e, ei) {
   if (e.type === 'bonus') {
     const dropType = Math.random() < 0.5 ? 'S' : 'L';
     powerUps.push({ x: e.x, y: e.y, vy: 1.5, width: 20, height: 20, type: dropType });
-  } else if (Math.random() < 0.04) {
+  } else if (Math.random() < (currentPhase >= 9 ? 0.02 : 0.04)) {
     let dropType = 'P';
     const r = Math.random();
     if (currentPhase >= 7 && r < 0.08) dropType = 'D';
@@ -2836,7 +2836,7 @@ function drawHUD() {
   if (combo > 1) {
     ctx.fillStyle = `hsl(${combo * 30}, 100%, 60%)`;
     ctx.font = 'bold 16px "Segoe UI", sans-serif';
-    ctx.fillText(`x${Math.min(combo, 10)} COMBO`, 15, 70);
+    ctx.fillText(`x${Math.min(combo, 50)} COMBO`, 15, 70);
   }
 
   ctx.textAlign = 'right';
@@ -3256,9 +3256,10 @@ console.log('%c[CHEAT] cheat.help() 를 입력하세요', 'color: #4af; font-siz
 
   function positionBtns() {
     const r = canvas.getBoundingClientRect();
-    btnGod.style.left = r.left + 'px';
+    const cx = r.left + r.width / 2;
+    btnGod.style.left = (cx - 48) + 'px';
     btnGod.style.top = r.top + 'px';
-    btnSkip.style.left = (r.left + 48) + 'px';
+    btnSkip.style.left = cx + 'px';
     btnSkip.style.top = r.top + 'px';
   }
   positionBtns();
